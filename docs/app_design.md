@@ -21,6 +21,8 @@
 
 ## 1. 설계에 영향을 주는 핵심 사실
 
+> 2026-11-04 에뮬레이터 실측으로 일부가 바뀌었다. 최신 사실은 `docs/sdk_measurement.md`가 우선한다(기어는 Pleos SDK에 있음, 타이어 공기압 수치 API 있음, 경고등은 `PRIVATE_CAR_SAFETY` 필요, 비상등은 읽을 수 없음).
+
 조사 결과 기획 단계의 가정과 다른 점이 있다. 아래 내용이 설계 전체의 전제가 된다.
 
 | # | 사실 | 설계에 주는 영향 |
@@ -77,21 +79,21 @@
 | 정보 | 읽는 방법 | 권한 | 상태 | 비고 |
 |---|---|---|---|---|
 | 차종·연식 | Pleos `CarInfo.getVINInfo` → VIN 해석 | `pleos.car.permission.CAR_INFO` | [확인] | 트림은 등록 화면에서 선택 |
-| 기어 | AAOS `CarPropertyManager` (`GEAR_SELECTION` / `CURRENT_GEAR`) | AAOS 파워트레인 권한 | [AAOS] | Virtual Console에서 P/R/N/D 변경 가능 |
-| 속도 | AAOS `PERF_VEHICLE_SPEED` | AAOS 속도 권한 | [AAOS] | 에뮬레이터 조절 카드 없음 |
-| 주차 브레이크 | Pleos `Safety` 경고등 `PARKING_BRAKE`, `ELECTRONIC_PARKING_BRAKE` | `pleos.car.permission.CAR_SAFETY` | [확인] | 경고등 ON이면 작동 중으로 해석 |
+| 기어 | Pleos `Gear.getCurrentGearSelectionState`, `registerGearSelection` (AAOS `GEAR_SELECTION`도 가능) | `CAR_*` | [실측 확인] | Virtual Console에서 P/R/N/D 변경 가능 |
+| 속도 | AAOS `PERF_VEHICLE_SPEED` (단위 m/s) | `android.car.permission.CAR_SPEED` | [실측 확인] | Virtual Console `controls?speed=`로 변경 가능 |
+| 주차 브레이크 | Pleos 경고등 `PARKING_BRAKE`, `ELECTRONIC_PARKING_BRAKE` 또는 AAOS `PARKING_BRAKE_ON` | 경고등은 `PRIVATE_CAR_SAFETY`, AAOS는 `CAR_POWERTRAIN` | [실측 확인] | 경고등은 에뮬레이터에서 조작 가능, AAOS 값은 조작 불가. `PRIVATE_` 권한 사용 가능 여부 미확인 |
 | 오토홀드 | Pleos 경고등 `AUTO_HOLD` | `CAR_SAFETY` | [확인] | |
-| 경고등 전체 | Pleos `Safety.getTelltalesInfo`, `registerTelltales` (`onTelltaleInfoUpdated`) | `CAR_SAFETY` | [확인] | 상태 ON/OFF/BLINK, 색 RED/YELLOW/GREEN/BLUE/WHITE/GRAY |
-| 타이어 저압 | Pleos `Tire.getLowTirePressure` (바퀴별: LEFT_FRONT 등) | `CAR_SAFETY` | [확인] | 수치 없음. 변화 구독 API 없음. 주기적으로 조회 |
+| 경고등 전체 | Pleos `Safety.getTelltalesInfo`, `registerTelltales` (`onTelltaleInfoUpdated`) | **`PRIVATE_CAR_SAFETY`** (`CAR_SAFETY`만으로는 SecurityException) | [실측 확인] | 상태 ON/OFF/BLINK, 색 RED/YELLOW/GREEN/BLUE/WHITE/GRAY |
+| 타이어 | `Tire.getLowTirePressure`는 저압 **기준값**(137kPa). 바퀴별 공기압은 `getTirePressure`, `registerTirePressure` | 기준값 `CAR_SAFETY`, 공기압 `PRIVATE_CAR_SAFETY` | [실측 확인] | 공기압은 에뮬레이터 미지원. TPMS 경고등이 시작 신호 |
 | 에어백 전개 | Pleos `Safety.hasSeatAirbagBeenDeployed`, `registerSeatAirbagDeployed` | `CAR_SAFETY` | [확인] | |
 | 안전벨트 미착용 | Pleos `Safety` 안전벨트 경고 | `CAR_SAFETY` | [확인] | 사고 안내 시 참고 |
-| 비상등 | AAOS `HAZARD_LIGHTS_STATE` | AAOS 외부 조명 권한 | [AAOS][미검증] | 안 되면 운전자 음성 확인으로 대체 |
+| 비상등 | 읽을 수 없음 (Pleos API 없음, AAOS는 일반 앱에 권한 미부여) | | [실측: 불가] | 운전자에게 묻는다 |
 | 충돌 | 없음 | | [없음] | 충격 + 정차로 "충돌 의심" 판단 (4.1절), 안 되면 운전자 음성 |
-| 가속도 (충격) | Android `SensorManager` `TYPE_LINEAR_ACCELERATION` / `TYPE_ACCELEROMETER` | 없음 (일반 센서) | [미검증] | Pleos 기기가 앱에 센서를 여는지 시험 필요. 에뮬레이터 가상 센서로 시험 |
+| 가속도 (충격) | Android `SensorManager`. 에뮬레이터에는 `TYPE_ACCELEROMETER_UNCALIBRATED`만 있음 | 없음 (일반 센서) | [에뮬레이터 확인, 실차 미확인] | `adb emu sensor set acceleration-uncalibrated`로 시험. 10 → 1 → 35 순서로 있는 센서를 쓴다 |
 | 브레이크 페달 | Pleos `Brake.getBrakePedalStatus`, `registerBrakePedalStatus` | `pleos.car.permission.CAR_DRIVE` | [확인] | 정차 판단 보조 |
 | 주행거리 | Pleos `Odometer` | `CAR_DRIVE` | [확인] | 정비 주기 판단 |
 | 오일·브레이크액 레벨 경고 | Pleos `Safety` (브레이크액, 엔진오일, 변속기오일 레벨) | `CAR_SAFETY` | [확인] | "레벨 경고 없음" 근거 |
-| 핸들 각도 | Pleos `Steeringwheel.getCurrentSteeringWheelAngle` | 도메인 권한 확인 필요 | [이름만 확인] | 경사로 주차 보조 정보. 도로 가장자리 방향은 앱이 알 수 없어 최종 확인은 운전자에게 묻는다 |
+| 핸들 각도 | Pleos `SteeringWheel.getCurrentSteeringWheelAngle`, `registerSteeringWheelAngle` (−470~500도) | `CAR_*` | [실측 확인, 부호 반대] | 경사로 주차 보조 정보. 도로 가장자리 방향은 앱이 알 수 없어 최종 확인은 운전자에게 묻는다 |
 | 창문 상태 | Pleos 창문·사이드미러 상태 | 확인 필요 | [확인] | 자동 세차 전 창문 닫힘 확인 |
 | 보험사 연락처 | 차량 데이터 없음 | | | 차량 등록 때 운전자가 보험사를 고름. 보험사 공개 대표번호를 앱에 내장 |
 

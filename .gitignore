@@ -4,3 +4,8 @@ proposal/SafePilot_기획서.docx
 
 # 내부 작업 기록 (이 PC에만 둔다)
 HANDOVER.md
+
+# 빌드 산출물
+.gradle/
+build/
+local.properties
