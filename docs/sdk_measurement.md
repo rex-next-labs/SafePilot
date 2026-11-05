@@ -46,8 +46,18 @@
 6. **에어백, 오일 레벨은 에뮬레이터가 지원하지 않는다.** 앱은 지원 여부를 먼저 확인하고 "확인 불가" 경로로 동작해야 한다. 시연에서도 그 경로가 보인다.
 7. **핸들 각도 부호**를 실차 규약과 맞춰야 한다. 경사로 안내는 최종 확인을 운전자 답변으로 하므로 MVP에는 영향이 없다.
 
+## 앱 실행 중 확인한 것 (2026-11-05, SafePilot 0.1.0)
+
+- **주행 중에는 Pleos가 앱 화면을 막는다.** 기어 D, 60km/h에서 앱 화면 대신 "주행 중에는 사용할 수 없습니다"가 뜬다. 앱 프로세스와 음성 출력(TTS)은 계속 동작했다. 주행 중 사용 허가(Distraction Optimization) 선언 전까지 화면 안내는 정차 후에만 보인다는 설계 가정이 맞았다
+- **STT/TTS 권한**: `pleos.car.permission.TTS_SERVICE`, `STT_SERVICE`가 없으면 `SecurityException`
+- **STT/TTS 초기화 순서**: `initialize()`가 성공한 뒤에 `setLocale`, `addEventListener`를 불러야 한다. 먼저 부르면 SDK 내부 `lateinit` 오류
+- **기기 내 처리(ON_DEVICE)** 로 Playground 키 없이 TTS가 동작한다(에뮬레이터). STT도 초기화는 되지만, 에뮬레이터에 실제 음성을 넣어 인식을 확인하지는 않았다
+- Virtual Console은 브라우저 화면이 열려 있어야 한다. 다른 페이지로 가거나 탭이 오래 쉬면 `emulator_inactive`(HTTP 503)
+
 ## 남은 확인 사항
 
 - `PRIVATE_CAR_SAFETY` 사용 가능 여부 (공모전 운영사 또는 Pleos 문의)
 - 실차에서 `PARKING_BRAKE_ON`, `getTirePressure`, 에어백, 오일 레벨, 가속도 센서 제공 여부
 - Virtual Console 타이어 공기압 항목이 앱에 전달되지 않는 이유(에뮬레이터 이미지 한계로 보임)
+- STT 실제 인식 품질(PC 마이크를 에뮬레이터에 연결해 시험)
+- 주행 중 사용 허가 선언 방법
