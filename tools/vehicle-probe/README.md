@@ -4,7 +4,7 @@ Pleos Vehicle SDK와 AAOS 차량 데이터를 읽고 변화를 구독해 logcat 
 
 빌드 (JDK 17, Gradle 8.10.2):
 
-    # local.properties: sdk.dir=C\:/Users/<user>/AppData/Local/Android/Sdk
+    # local.properties: sdk.dir=C\:/Android/Sdk  (Android SDK 설치 위치)
     gradle :app:assembleDebug
     adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 

@@ -1,0 +1,34 @@
+{
+  "packageName": "ai.safepilot",
+  "appDescription": "A driving partner app that reads vehicle data and guides the driver step by step through situations such as parking, tire warnings and accidents, then confirms each action with vehicle data.",
+  "invokeWord": "세이프파일럿",
+  "version": "0.1.0",
+  "actionCalls": [
+    {
+      "type": "function",
+      "function": {
+        "name": "CHECK_PARKING_SAFETY",
+        "description": "Start voice guidance that checks the parked car is secured, including the parking brake and the steering direction on a slope.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        },
+        "component": "activity"
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "EXPLAIN_TIRE_WARNING",
+        "description": "Start voice guidance about a tire pressure warning, telling the driver how to stop safely and what to check at a repair shop.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        },
+        "component": "activity"
+      }
+    }
+  ]
+}

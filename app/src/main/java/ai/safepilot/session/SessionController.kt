@@ -108,8 +108,17 @@ class SessionController(
     private fun begin(situation: Situation) {
         run?.cancel()
         while (answers.tryReceive().isSuccess) Unit
-        val guidance = SituationDetector.guidanceFor(situation, snapshots.value)
-        run = scope.launch { execute(guidance) }
+        run = scope.launch {
+            // 음성 호출로 앱이 막 켜졌으면 차량 값을 아직 읽는 중일 수 있다. 잠깐 기다려
+            // 읽은 값으로 안내를 만든다(못 읽으면 그대로 진행하고 운전자에게 묻는다)
+            val s = withTimeoutOrNull(VEHICLE_READY_MS) { snapshots.first { it.isReadyFor(situation) } } ?: snapshots.value
+            execute(SituationDetector.guidanceFor(situation, s))
+        }
+    }
+
+    private fun VehicleSnapshot.isReadyFor(situation: Situation) = when (situation) {
+        Situation.SLOPE_PARKING -> gear !is Known.Pending && parkingBrakeOn !is Known.Pending
+        Situation.TIRE_ISSUE -> speedKmh !is Known.Pending && tpmsWarning !is Known.Pending
     }
 
     private fun cancel(silent: Boolean) {
@@ -171,6 +180,7 @@ class SessionController(
     }
 
     private companion object {
+        const val VEHICLE_READY_MS = 3_000L
         const val ANSWER_REMIND_MS = 20_000L
         const val ANSWER_REMINDER = "'예' 또는 '아니요'라고 말씀해 주세요."
     }

@@ -13,7 +13,8 @@ Pleos Connect 차량 데이터로 주차, 정비, 사고 등 운전자가 마주
 
 - 차량을 조작하지 않습니다. 안내하고 차량 데이터로 결과를 확인만 합니다.
 - 생성형 AI를 쓰지 않습니다. 정해진 규칙과 매뉴얼 근거로 판단합니다.
-- 상시로 듣지 않습니다. 마이크 버튼을 눌렀을 때와, 앱이 질문한 직후 6초 동안만 듣습니다. 화면의 예/아니요 버튼으로도 답할 수 있습니다.
+- 앱을 부를 때는 Pleos 음성 비서 Gleo AI에게 "세이프파일럿, 주차 확인해 줘"처럼 말합니다(Gleo Interface, `app/src/main/assets/schema.json`). 마이크 버튼으로도 시작할 수 있습니다.
+- 앱은 상시로 듣지 않습니다. 앱이 질문한 직후 6초와, 마이크 버튼을 눌렀을 때만 듣습니다. 화면의 예/아니요 버튼으로도 답할 수 있습니다.
 - 읽을 수 없는 차량 데이터는 "확인 불가"로 표시하고 운전자에게 묻습니다.
 
 ## 테스트 환경
@@ -40,7 +41,7 @@ Pleos Connect 차량 데이터로 주차, 정비, 사고 등 운전자가 마주
 ### 소스로 빌드
 
 ```bash
-# local.properties: sdk.dir=C\:/Users/<사용자>/AppData/Local/Android/Sdk
+# local.properties: sdk.dir=C\:/Android/Sdk  (Android SDK 설치 위치)
 ./gradlew :app:assembleDebug
 ./gradlew :app:testDebugUnitTest   # 단위 테스트
 adb install -r -g app/build/outputs/apk/debug/app-debug.apk
@@ -56,7 +57,8 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 
    브라우저에서 `http://127.0.0.1:8088/`을 엽니다. 시험하는 동안 이 화면을 열어 두어야 합니다.
 2. **경사로 주차**: Safety → Telltales에서 Parking brake를 Off로 둡니다. Motion → Gear를 D에서 P로 바꿉니다. 앱이 "주차 브레이크가 꺼져 있어요."라고 말하면 Parking brake를 On으로 바꿉니다. 이후 질문에 "응"이라고 말하거나 화면의 "예"를 누릅니다.
-3. **타이어 경고**: Gear D, 속도를 올린 상태에서 Telltales → TPMS를 On으로 바꿉니다. 주행 중에는 Pleos가 앱 화면을 가리고 음성 안내만 나옵니다. 브레이크로 정차하면 화면 안내가 이어집니다.
+3. **음성으로 부르기**: 에뮬레이터를 `-allow-host-audio`로 띄운 뒤 `tools/gleo.ps1`을 실행합니다(PC 마이크 연결 + 운전석 음성 버튼과 같은 동작). 화면 위쪽에 "운전석에서 듣는 중…"이 뜨면 화면을 누르지 말고 "세이프파일럿, 주차 확인해 줘"라고 말합니다.
+4. **타이어 경고**: Gear D, 속도를 올린 상태에서 Telltales → TPMS를 On으로 바꿉니다. 주행 중에는 Pleos가 앱 화면을 가리고 음성 안내만 나옵니다. 브레이크로 정차하면 화면 안내가 이어집니다.
 
 ## 권한
 

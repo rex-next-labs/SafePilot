@@ -54,6 +54,16 @@
 - **기기 내 처리(ON_DEVICE)** 로 Playground 키 없이 TTS가 동작한다(에뮬레이터). STT도 초기화는 되지만, 에뮬레이터에 실제 음성을 넣어 인식을 확인하지는 않았다
 - Virtual Console은 브라우저 화면이 열려 있어야 한다. 다른 페이지로 가거나 탭이 오래 쉬면 `emulator_inactive`(HTTP 503)
 
+## Gleo AI 연동 (2026-11-05)
+
+- `assets/schema.json`을 넣은 앱을 `adb install`하면 Gleo(`[GAA] [Schema] Loaded schema.json from ai.safepilot`)가 바로 읽어 등록한다. 에뮬레이터에서는 승인 절차 없이 등록됐다
+- Gleo와 같은 형식의 Intent(`am start -a CHECK_PARKING_SAFETY -p ai.safepilot --es ACTION_PARAM '{}'`)로 앱이 안내를 시작하고 `APP_ACTION_RESPONSE`를 보내는 것을 확인했다
+- 앱이 꺼져 있다가 호출로 켜지면 차량 값과 TTS가 아직 준비되지 않았다. 안내 시작 전에 최대 3초 기다리도록 했다
+- **Gleo는 Intent action 앞에 패키지 이름을 붙여 보낸다**(`ai.safepilot.CHECK_PARKING_SAFETY`). 공식 문서 예시(`CHECK_PARKING_SAFETY`)와 다르다. 처음에 문서대로 등록했다가 "No Activity found to handle Intent"로 실패했고, Gleo는 "앱 연결에 문제가 있어서 말씀하신 것을 처리하지 못했어요."라고 답했다. 매니페스트에 두 형식을 모두 등록해 해결했다
+- 실제 음성 호출: Gleo가 "세이프 파일럿 주차 확인해줘"를 인식하고 LLM이 `CHECK_PARKING_SAFETY`를 골랐다(로그 `toolCalls`). Gleo 음성 인식은 서버 STT를 쓴다
+- 에뮬레이터에서 Gleo 띄우기: `adb shell cmd voiceinteraction show`(운전석 음성 버튼 짧게 누름과 같음). Gleo가 듣는 중에 화면을 누르면 닫힌다
+- 에뮬레이터 PC 마이크: `-allow-host-audio`로 띄운 뒤 `adb emu avd hostmicon`을 해야 실제 소리가 들어간다. 안 하면 무음이 들어가 STT가 아무것도 인식하지 못한다(`tools/gleo.ps1`에 포함)
+
 ## 남은 확인 사항
 
 - `PRIVATE_CAR_SAFETY` 사용 가능 여부 (공모전 운영사 또는 Pleos 문의)

@@ -2,6 +2,7 @@ package ai.safepilot.ui
 
 import ai.safepilot.engine.DriverIntent
 import ai.safepilot.session.SessionController
+import ai.safepilot.session.SessionState
 import ai.safepilot.vehicle.VehicleRepository
 import ai.safepilot.voice.Heard
 import ai.safepilot.voice.PleosListener
@@ -83,6 +84,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             speaker.stop()
             _mic.value = MicState(listening = true)
             listener.start()
+            // 말이 끝났는데 인식기가 끝을 알리지 않는 경우를 대비해 최대 시간을 둔다
+            autoWindow = viewModelScope.launch {
+                delay(MANUAL_WINDOW_MS)
+                if (_mic.value.listening) {
+                    listener.stop()
+                    _mic.value = MicState(error = if (_mic.value.heard.isBlank()) "말소리를 듣지 못했어요. 다시 눌러 주세요." else null)
+                }
+            }
         }
     }
 
@@ -98,6 +107,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismiss() = session.dismiss()
 
+    /** Gleo AI 음성 호출. 이미 안내 중이면 새로 시작하지 않는다 */
+    fun startFromGleo(intent: DriverIntent): Boolean {
+        if (session.state.value is SessionState.Guiding) return false
+        session.onDriverIntent(intent)
+        return true
+    }
+
     override fun onCleared() {
         vehicle.stop()
         speaker.release()
@@ -107,5 +123,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private companion object {
         const val ANSWER_WINDOW_MS = 6_000L
         const val ANSWER_GRACE_MS = 3_000L
+        const val MANUAL_WINDOW_MS = 10_000L
     }
 }

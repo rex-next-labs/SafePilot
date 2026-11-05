@@ -119,7 +119,7 @@ private fun Card(content: @Composable ColumnScope.() -> Unit) {
 @Composable
 private fun IdleCard(onStart: (DriverIntent) -> Unit) = Card {
     Text("차량 상태를 지켜보고 있어요", color = C.text, fontSize = 36.sp, fontWeight = FontWeight.Bold)
-    Text("안내가 필요한 순간에 먼저 알려 드릴게요. 궁금한 게 있으면 마이크 버튼을 눌러 말씀해 주세요.", color = C.sub, fontSize = 24.sp)
+    Text("안내가 필요한 순간에 먼저 알려 드릴게요. 필요할 땐 \"세이프파일럿, 주차 확인해 줘\"처럼 불러 주세요.", color = C.sub, fontSize = 24.sp)
     Spacer(Modifier.weight(1f))
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         ChoiceButton("주차 확인", C.line) { onStart(DriverIntent.SLOPE_PARKING) }
@@ -193,7 +193,7 @@ private fun MicBar(mic: MicState, onMic: () -> Unit) {
                     else -> "듣고 있어요…"
                 }
                 mic.heard.isNotBlank() -> "\"${mic.heard}\""
-                else -> "마이크 버튼을 누르고 말씀해 주세요"
+                else -> "\"세이프파일럿\"을 부르거나 마이크 버튼을 눌러 주세요"
             },
             color = if (mic.error != null) C.amber else C.text, fontSize = 26.sp,
         )

@@ -25,6 +25,7 @@ private const val TAG = "SafePilot.Voice"
 
 /** 문장 길이에 맞춘 최대 대기 시간. TTS가 끝을 알리지 않아도 대화가 멈추지 않게 한다 */
 private fun maxSpeakMs(text: String) = 3_000L + text.length * 250L
+private const val READY_WAIT_MS = 3_000L
 
 /**
  * Pleos TTS(기기 내 처리, ko-KR). 초기화에 실패하면 Android 기본 TTS로, 그것도 안 되면
@@ -34,6 +35,8 @@ class PleosSpeaker(private val context: Context) : Speaker {
     private var pleos: TextToSpeech? = null
     private var android: AndroidTts? = null
     @Volatile private var pending: CompletableDeferred<Unit>? = null
+    /** 초기화가 끝나면(성공이든 대체든) 완료. 앱이 막 켜졌을 때 첫 문장이 묻히지 않게 한다 */
+    private val ready = CompletableDeferred<Unit>()
 
     fun start() {
         val tts = TextToSpeech(context, TtsMode.ON_DEVICE)
@@ -54,6 +57,7 @@ class PleosSpeaker(private val context: Context) : Speaker {
                         tts.setLocale(Locale.KOREA)
                     }.onFailure { Log.w(TAG, "Pleos TTS setup", it) }
                     Log.i(TAG, "Pleos TTS ready")
+                    ready.complete(Unit)
                 }
                 override fun onFailure(p0: ErrorType) { Log.w(TAG, "Pleos TTS init failed: $p0"); useAndroidTts() }
             })
@@ -64,6 +68,7 @@ class PleosSpeaker(private val context: Context) : Speaker {
         pleos = null
         android = AndroidTts(context) { status ->
             if (status == AndroidTts.SUCCESS) android?.language = Locale.KOREA else android = null
+            ready.complete(Unit)
         }.apply {
             setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(id: String?) {}
@@ -74,6 +79,7 @@ class PleosSpeaker(private val context: Context) : Speaker {
     }
 
     override suspend fun say(text: String) {
+        withTimeoutOrNull(READY_WAIT_MS) { ready.await() }
         Log.i(TAG, "say: $text")
         val done = CompletableDeferred<Unit>()
         pending = done
