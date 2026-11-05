@@ -84,7 +84,7 @@ SafePilot은 차량을 대신 조작하거나 생성형 AI가 답을 만들어 �
 - Pleos Connect(Android Automotive OS), Kotlin, Jetpack Compose, minSdk 28(Pleos 요건) / targetSdk 35
 - Pleos Connect Emulator 2.1.0(API 34)과 Virtual Console로 기어, 속도, 브레이크, 핸들 각도, 경고등을 바꿔 가며 시험합니다. 충격은 에뮬레이터 가속도 센서에 값을 넣어 시험합니다.
 
-**SDK / API 사용 계획: 에뮬레이터에서 실측한 것**
+**SDK / API 사용 계획**
 
 - Pleos Vehicle SDK
   - Gear: 기어 상태와 변화 구독
@@ -108,17 +108,17 @@ SafePilot은 차량을 대신 조작하거나 생성형 AI가 답을 만들어 �
 - 비상등: 앱에서 읽을 수 없어 운전자에게 켰는지 묻습니다.
 - 핸들 방향: 각도를 읽어도 도로의 어느 쪽이 가장자리인지는 앱이 알 수 없으므로, 최종 확인은 운전자에게 묻습니다.
 - 가속도 센서: 에뮬레이터에서는 보정 전 가속도 센서로 시험했고, 실차 제공 여부를 확인한 뒤 적용합니다. 쓸 수 없으면 사고 안내는 음성으로 시작합니다.
-- 주행 중 사용 허가: 선언 방법을 확인하기 전까지는 정차와 주차 중 사용을 기준으로 하고, AAOS CarUxRestrictionsManager로 주행 중에는 화면을 줄입니다.
+- 주행 중 사용 허가: 에뮬레이터에서 주행 중에는 Pleos가 앱 화면을 가리고 "주행 중에는 사용할 수 없습니다"를 표시했고, 음성 안내는 계속 나왔습니다. 허가 방법을 확인하기 전까지는 정차와 주차 중 사용을 기준으로 하고, 주행 중에는 음성으로만 안내합니다.
 - 모든 차량 데이터는 지원 여부를 먼저 확인하고, 지원하지 않으면 "확인 불가"로 표시한 뒤 운전자에게 묻습니다.
 
 **앱 구조**
 
-- VehicleState: Vehicle SDK와 AAOS 데이터를 하나의 차량 상태 흐름으로 통합
-- SituationEngine: 상황 판단 규칙, 음성 의도 분류(키워드와 규칙), 안내 단계 생성
-- KnowledgeBase: 차종별 매뉴얼 정보와 출처를 담은 JSON 데이터
-- DriverProfile: 차량 등록 정보, 가입 보험사, 정비 기록
-- SessionController: 대기, 듣는 중, 판단, 안내, 결과 확인으로 이어지는 대화 진행
-- VoiceIO: Pleos STT/TTS, 오디오 포커스
+- vehicle: Vehicle SDK와 AAOS 데이터를 하나의 차량 상태로 통합(VehicleRepository, VehicleSnapshot)
+- engine: 상황 감지, 시나리오별 안내 단계, 음성 의도 분류(SituationDetector, Scenarios, IntentClassifier)
+- session: 안내, 결과 확인, 답 듣기로 이어지는 대화 진행(SessionController)
+- voice: Pleos STT/TTS와 Gleo AI 호출 처리(PleosSpeaker, PleosListener, GleoActions)
+- ui: 차량 상태, 안내 카드, 예/아니요, 마이크 화면
+- 1차 합격 후 추가: 차종별 매뉴얼 정보(JSON)와 차량 등록, 정비 기록
 
 **일정**
 
