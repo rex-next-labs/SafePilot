@@ -1,7 +1,7 @@
 """공식 접수양식(DOCX)을 채운다.
 
 - 01장 참가 정보, 04장 성명·앱명: applicant.json (개인정보라 git에 올리지 않는다)
-- 02장 1~8번 박스: draft.md
+- 02장 1~8번 박스: draft.md (`![설명](diagrams/x.png)` 줄은 그림으로 넣는다)
 
 사용법: python fill_form.py [출력 파일명]
 양식 원본(contest-application-consent.docx)은 수정하지 않는다.
@@ -9,6 +9,7 @@
 """
 import json
 import re
+import struct
 import sys
 import zipfile
 from pathlib import Path
@@ -49,16 +50,72 @@ def para(text, kind="body"):
     return f"<w:p><w:pPr>{spacing}</w:pPr>{run(text)}</w:p>"
 
 
+# 본문에 넣을 그림: (관계 id, 박스 안 파일 이름, 원본 경로)
+IMAGES = []
+EMU_PER_INCH = 914400
+MAX_W_IN, MAX_H_IN = 6.3, 8.0  # 박스 안쪽 폭(약 6.7인치)보다 조금 작게, 한 페이지를 넘지 않게
+
+
+def png_size(path):
+    with open(path, "rb") as f:
+        head = f.read(24)
+    return struct.unpack(">II", head[16:24])
+
+
+def image_para(alt, rel_path):
+    src = (HERE / rel_path).resolve()
+    w_px, h_px = png_size(src)
+    w_in = MAX_W_IN
+    h_in = w_in * h_px / w_px
+    if h_in > MAX_H_IN:
+        h_in = MAX_H_IN
+        w_in = h_in * w_px / h_px
+    cx, cy = int(w_in * EMU_PER_INCH), int(h_in * EMU_PER_INCH)
+    n = len(IMAGES) + 1
+    rid, name = f"rIdSafePilot{n}", f"safepilot_{n}.png"
+    IMAGES.append((rid, name, src))
+    a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    pic = "http://schemas.openxmlformats.org/drawingml/2006/picture"
+    return (
+        '<w:p><w:pPr><w:keepNext/><w:spacing w:before="60" w:after="120"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing>'
+        f'<wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{cx}" cy="{cy}"/>'
+        f'<wp:docPr id="{9000 + n}" name="{name}" descr="{escape(alt)}"/>'
+        f'<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="{a}" noChangeAspect="1"/></wp:cNvGraphicFramePr>'
+        f'<a:graphic xmlns:a="{a}"><a:graphicData uri="{pic}"><pic:pic xmlns:pic="{pic}">'
+        f'<pic:nvPicPr><pic:cNvPr id="{9000 + n}" name="{name}"/><pic:cNvPicPr/></pic:nvPicPr>'
+        f'<pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+        f'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
+        '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'
+    )
+
+
 def section_xml(body):
     out = []
+    last_heading = None
     for line in body.splitlines():
         line = line.rstrip()
         if not line:
             continue
         indent = len(line) - len(line.lstrip())
         s = line.strip()
+        img = re.fullmatch(r"!\[(.*?)\]\((.+?)\)", s)
+        if img:
+            p = image_para(img.group(1), img.group(2))
+            if last_heading is not None:
+                # 표 안에서는 keepNext가 무시되어 제목만 앞 페이지에 남으므로, 제목과 그림을 한 문단으로 묶는다
+                out.pop()
+                p = p.replace(
+                    '<w:spacing w:before="60" w:after="120"/><w:jc w:val="center"/></w:pPr>',
+                    '<w:spacing w:before="120" w:after="120"/></w:pPr>'
+                    + run(last_heading, bold=True) + "<w:r><w:br/></w:r>",
+                )
+            out.append(p)
+            last_heading = None
+            continue
+        last_heading = None
         if re.fullmatch(r"\*\*(.+)\*\*", s):
             out.append(para(s[2:-2], "heading"))
+            last_heading = s[2:-2]
         elif s.startswith("- "):
             p = para(s[2:], "bullet")
             if indent:  # 하위 글머리표는 한 단계 더 들여쓴다
@@ -161,16 +218,29 @@ def main():
     if missing:
         sys.exit(f"draft.md에 없는 항목: {missing}")
     with zipfile.ZipFile(FORM) as zin, zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as zout:
+        # 본문을 먼저 채워야 그림 목록(IMAGES)이 정해지고, 관계 파일과 콘텐츠 형식에 반영할 수 있다
+        doc = fill(zin.read("word/document.xml").decode("utf-8"), app_name, sections)
+        if APPLICANT.exists():
+            doc = fill_applicant(doc, json.loads(APPLICANT.read_text(encoding="utf-8")), app_name)
+        else:
+            print("applicant.json이 없어 01장 참가 정보는 비워 둠")
         for item in zin.infolist():
             data = zin.read(item.filename)
             if item.filename == "word/document.xml":
-                doc = fill(data.decode("utf-8"), app_name, sections)
-                if APPLICANT.exists():
-                    doc = fill_applicant(doc, json.loads(APPLICANT.read_text(encoding="utf-8")), app_name)
-                else:
-                    print("applicant.json이 없어 01장 참가 정보는 비워 둠")
                 data = doc.encode("utf-8")
+            elif item.filename == "word/_rels/document.xml.rels" and IMAGES:
+                rels = "".join(
+                    f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{name}"/>'
+                    for rid, name, _ in IMAGES)
+                data = data.decode("utf-8").replace("</Relationships>", rels + "</Relationships>").encode("utf-8")
+            elif item.filename == "[Content_Types].xml" and IMAGES:
+                t = data.decode("utf-8")
+                if 'Extension="png"' not in t:
+                    t = t.replace("<Default Extension=\"xml\"", '<Default Extension="png" ContentType="image/png"/><Default Extension="xml"', 1)
+                data = t.encode("utf-8")
             zout.writestr(item, data)
+        for _, name, src in IMAGES:
+            zout.write(src, f"word/media/{name}")
     print(f"작성 완료: {OUT.name}")
 
 

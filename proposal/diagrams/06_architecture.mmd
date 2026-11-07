@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph Pleos["Pleos Connect"]
+        G["Gleo AI"]
+        V["Vehicle SDK, AAOS"]
+        T["STT / TTS"]
+    end
+    subgraph App["SafePilot 앱"]
+        U["ui<br/>화면, Gleo 호출 받기"]
+        VE["vehicle<br/>차량 상태 통합"]
+        SE["session<br/>대화 진행"]
+        E["engine<br/>상황 감지, 시나리오"]
+        VO["voice<br/>말하기, 듣기"]
+    end
+    G --> U
+    V --> VE
+    T <--> VO
+    U --> SE
+    VE --> SE
+    VO <--> SE
+    SE --> E
