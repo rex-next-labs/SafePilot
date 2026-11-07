@@ -42,7 +42,8 @@ def run(text, bold=False):
 def para(text, kind="body"):
     spacing = '<w:spacing w:before="0" w:after="60" w:line="300" w:lineRule="auto"/>'
     if kind == "heading":
-        ppr = f'<w:pPr><w:keepNext/><w:spacing w:before="120" w:after="60" w:line="300" w:lineRule="auto"/></w:pPr>'
+        # 박스(표 칸) 안에서 keepNext를 쓰면 Word가 칸 전체를 다음 페이지로 넘겨 앞 페이지가 비므로 쓰지 않는다
+        ppr = f'<w:pPr><w:spacing w:before="120" w:after="60" w:line="300" w:lineRule="auto"/></w:pPr>'
         return f"<w:p>{ppr}{run(text, bold=True)}</w:p>"
     if kind == "bullet":
         ppr = f'<w:pPr>{spacing}<w:ind w:left="300" w:hanging="200"/></w:pPr>'
@@ -77,7 +78,7 @@ def image_para(alt, rel_path):
     a = "http://schemas.openxmlformats.org/drawingml/2006/main"
     pic = "http://schemas.openxmlformats.org/drawingml/2006/picture"
     return (
-        '<w:p><w:pPr><w:keepNext/><w:spacing w:before="60" w:after="120"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing>'
+        '<w:p><w:pPr><w:spacing w:before="60" w:after="120"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing>'
         f'<wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{cx}" cy="{cy}"/>'
         f'<wp:docPr id="{9000 + n}" name="{name}" descr="{escape(alt)}"/>'
         f'<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="{a}" noChangeAspect="1"/></wp:cNvGraphicFramePr>'
