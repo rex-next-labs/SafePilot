@@ -54,7 +54,7 @@ def para(text, kind="body"):
 # 본문에 넣을 그림: (관계 id, 박스 안 파일 이름, 원본 경로)
 IMAGES = []
 EMU_PER_INCH = 914400
-MAX_W_IN, MAX_H_IN = 6.3, 8.0  # 박스 안쪽 폭(약 6.7인치)보다 조금 작게, 한 페이지를 넘지 않게
+MAX_W_IN, MAX_H_IN = 6.3, 3.3  # 폭은 박스 안쪽(약 6.7인치)보다 조금 작게, 높이는 쪽 아래 빈자리에도 들어가게
 
 
 def png_size(path):

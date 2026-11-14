@@ -1,9 +1,0 @@
-sequenceDiagram
-    actor D as 운전자
-    participant G as Gleo AI (차량 음성 비서)
-    participant S as SafePilot
-    D->>G: 음성 버튼을 누르고 "세이프파일럿, 주차 확인해 줘"
-    G->>G: 말을 해석해 SafePilot의 주차 확인 기능 선택
-    G->>S: 주차 확인 기능 호출
-    S-->>G: SafePilot이 안내를 시작함
-    S->>D: "주차 브레이크가 꺼져 있어요."

@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant C as 차량
+    participant S as SafePilot
+    actor D as 운전자
+    C-->>S: 차량 상태 변화 (기어, 경고등, 타이어 공기압 등)
+    S->>S: 안내가 필요한 상황인지 판단
+    S->>D: 운전자가 묻기 전에 먼저 상황을 알림
+    S->>D: 첫 번째 할 일 안내
+    D->>C: 조치
+    C-->>S: 조치 결과
+    S->>D: 결과 확인 후 다음 할 일 또는 완료 안내
