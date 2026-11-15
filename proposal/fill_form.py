@@ -34,9 +34,29 @@ def parse_draft(text):
     return app_name, sections
 
 
+# 본문 속 URL은 누를 수 있는 링크로 넣는다: (관계 id, 주소)
+LINKS = []
+URL_RE = re.compile(r"https?://[^\s)]+")
+
+
+def link(url):
+    rid = f"rIdLink{len(LINKS) + 1}"
+    LINKS.append((rid, url))
+    rpr = '<w:rPr><w:color w:val="0563C1"/><w:u w:val="single"/></w:rPr>'
+    return f'<w:hyperlink r:id="{rid}" w:history="1"><w:r>{rpr}<w:t xml:space="preserve">{escape(url)}</w:t></w:r></w:hyperlink>'
+
+
 def run(text, bold=False):
     rpr = "<w:rPr><w:b/><w:color w:val=\"16324F\"/></w:rPr>" if bold else ""
-    return f'<w:r>{rpr}<w:t xml:space="preserve">{escape(text)}</w:t></w:r>'
+    out, pos = [], 0
+    for m in URL_RE.finditer(text):
+        if m.start() > pos:
+            out.append(f'<w:r>{rpr}<w:t xml:space="preserve">{escape(text[pos:m.start()])}</w:t></w:r>')
+        out.append(link(m.group(0)))
+        pos = m.end()
+    if pos < len(text) or not out:
+        out.append(f'<w:r>{rpr}<w:t xml:space="preserve">{escape(text[pos:])}</w:t></w:r>')
+    return "".join(out)
 
 
 def para(text, kind="body"):
@@ -229,10 +249,13 @@ def main():
             data = zin.read(item.filename)
             if item.filename == "word/document.xml":
                 data = doc.encode("utf-8")
-            elif item.filename == "word/_rels/document.xml.rels" and IMAGES:
+            elif item.filename == "word/_rels/document.xml.rels" and (IMAGES or LINKS):
                 rels = "".join(
                     f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{name}"/>'
                     for rid, name, _ in IMAGES)
+                rels += "".join(
+                    f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="{escape(url)}" TargetMode="External"/>'
+                    for rid, url in LINKS)
                 data = data.decode("utf-8").replace("</Relationships>", rels + "</Relationships>").encode("utf-8")
             elif item.filename == "[Content_Types].xml" and IMAGES:
                 t = data.decode("utf-8")
