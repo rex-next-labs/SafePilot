@@ -7,7 +7,7 @@ import ai.safepilot.vehicle.valueOrNull
 
 private const val SLOPE_LAW = "도로교통법 시행령 제11조 제3항"
 
-/** 경사로 주차 (설계서 5.2). 앱은 경사를 알 수 없으므로 운전자에게 묻는다. */
+/** 경사로 주차 (설계서 6.1). 앱은 경사를 알 수 없으므로 운전자에게 묻는다. */
 object SlopeParking {
     fun build(s: VehicleSnapshot): Guidance {
         val steps = mutableListOf<GuidanceStep>()

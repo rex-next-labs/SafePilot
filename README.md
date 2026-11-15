@@ -1,6 +1,6 @@
 # SafePilot
 
-Pleos Connect 차량 데이터로 주차, 정비, 사고 등 운전자가 마주치는 다양한 상황을 먼저 감지하고, 차종별 매뉴얼에 맞는 대처를 음성으로 안내하며 필요한 조치를 마쳤는지까지 확인해 주는 운전 파트너 앱입니다.
+Pleos Connect 차량 데이터로 주차, 타이어, 사고처럼 운전자가 마주치는 상황을 먼저 감지하고, 차종별 매뉴얼에 맞는 대처를 음성으로 안내하며 필요한 조치를 마쳤는지까지 확인해 주는 운전 파트너 앱입니다.
 
 현대자동차그룹 차량용 앱 개발 공모전 출품작입니다.
 
@@ -85,6 +85,6 @@ tools/vehicle-probe/   차량 데이터 실측용 앱
 
 ## 참고
 
-- 설계서: [docs/app_design.md](docs/app_design.md)
+- 설계서: [docs/SafePilot_설계서.pdf](docs/SafePilot_설계서.pdf) ([원문](docs/SafePilot_설계서.md))
 - 에뮬레이터 실측 결과: [docs/sdk_measurement.md](docs/sdk_measurement.md)
 - Pleos Connect SDK 라이선스에 따라 SDK 파일과 에뮬레이터 이미지는 이 저장소에 포함하지 않습니다.

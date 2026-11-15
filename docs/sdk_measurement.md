@@ -1,6 +1,6 @@
 # Pleos SDK 실측 결과 (2026-11-04)
 
-설계서 3장(차량 데이터 매핑)의 [미검증] 항목을 Pleos Connect Emulator v2.1.0에서 직접 시험한 결과다. 이 문서가 설계서 3장보다 우선한다.
+차량 데이터를 읽는 방법을 Pleos Connect Emulator v2.1.0에서 직접 시험한 결과다. 정리한 내용은 설계서(SafePilot_설계서) 3장 차량 데이터 매핑에 반영했다.
 
 ## 시험 환경
 
@@ -15,14 +15,14 @@
 
 | 정보 | 읽는 방법 | 권한 | 읽기 | 변화 감지 | 에뮬레이터 조작 | 결론 |
 |---|---|---|---|---|---|---|
-| 기어 | Pleos `Gear.getCurrentGearSelectionState`, `registerGearSelection` | `CAR_*`(일반) | 됨 (`GEAR_PARK`) | 됨 (P→D→P) | Virtual Console Gear | **Pleos SDK로 읽는다.** 설계서의 "기어는 AAOS로만"은 틀렸다. AAOS `GEAR_SELECTION`도 됨(4=P, 8=D) |
+| 기어 | Pleos `Gear.getCurrentGearSelectionState`, `registerGearSelection` | `CAR_*`(일반) | 됨 (`GEAR_PARK`) | 됨 (P→D→P) | Virtual Console Gear | **Pleos SDK로 읽는다.** AAOS `GEAR_SELECTION`도 됨(4=P, 8=D) |
 | 속도 | AAOS `PERF_VEHICLE_SPEED` | `android.car.permission.CAR_SPEED`(런타임 권한) | 됨, **단위 m/s** | 됨 | Virtual Console `controls?speed=`(km/h 입력, 서서히 감속) | 정차 판단 가능. km/h 변환 필요 |
 | 주차 브레이크 (경고등) | Pleos `Safety.getTelltalesInfo`, `registerTelltales` → `PARKING_BRAKE`, `ELECTRONIC_PARKING_BRAKE` | **`PRIVATE_CAR_SAFETY`** | 됨 | 됨 (On/Off 즉시) | Virtual Console Telltales | `CAR_SAFETY`만으로는 `SecurityException`. 앱 마켓 승인 여부 확인 필요 |
 | 주차 브레이크 (상태값) | AAOS `PARKING_BRAKE_ON` | `android.car.permission.CAR_POWERTRAIN` | 됨 (`false`) | 구독 됨 | **조작 불가** (경고등을 켜도 바뀌지 않음) | 일반 권한으로 읽힌다. 실차 대비 1순위 후보지만 에뮬레이터 시연에는 못 쓴다 |
 | 오토홀드 | 경고등 `AUTO_HOLD` | `PRIVATE_CAR_SAFETY` | 경고등 목록에 있음 | — | Telltales | 주차 브레이크와 같은 조건 |
 | TPMS 경고 | 경고등 `TPMS` | `PRIVATE_CAR_SAFETY` | 됨 (노랑) | 됨 | Telltales | 타이어 시나리오의 시작 신호로 쓸 수 있다 |
 | 바퀴별 저압 | Pleos `Tire.getLowTirePressure(WheelArea)` | `CAR_SAFETY` | 됨, 그러나 **값이 137.0 (모든 바퀴)** | 구독 API 없음 | — | 저압 여부가 아니라 **저압 기준값(kPa)** 이다(VHAL `CRITICALLY_LOW_TIRE_PRESSURE`) |
-| 바퀴별 공기압 | Pleos `Tire.getTirePressure(WheelArea)`, `registerTirePressure` | `PRIVATE_CAR_SAFETY` | **에뮬레이터 미지원** (`TIRE_PRESSURE` 설정 없음) | 미지원 | Virtual Console `tire-pressure`가 있지만 앱까지 오지 않음 | 공기압 수치 API는 있다(설계서의 "수치 없음"은 틀림). 실차에서만 확인 가능. 기준값과 비교하면 "어느 바퀴"를 판단할 수 있다 |
+| 바퀴별 공기압 | Pleos `Tire.getTirePressure(WheelArea)`, `registerTirePressure` | `PRIVATE_CAR_SAFETY` | **에뮬레이터 미지원** (`TIRE_PRESSURE` 설정 없음) | 미지원 | Virtual Console `tire-pressure`가 있지만 앱까지 오지 않음 | 공기압 수치 API는 있다. 실차에서만 확인 가능. 기준값과 비교하면 "어느 바퀴"를 판단할 수 있다 |
 | 비상등 | Pleos API 없음(`TurnSignal`은 OFF/LEFT/RIGHT뿐). AAOS `HAZARD_LIGHTS_STATE` | AAOS는 `CAR_EXTERIOR_LIGHTS`(일반 앱에 부여 안 됨) | **읽을 수 없음** | — | Virtual Console Hazard(켜도 앱 반응 없음) | **운전자에게 묻는다.** 확정 |
 | 방향지시등 | Pleos `TurnSignal.getCurrentTurnSignalState` | `CAR_LIGHTS` | 됨 (OFF) | 됨 | Turn Signal State | 사고 시나리오에는 쓰지 않음 |
 | 핸들 각도 | Pleos `SteeringWheel.getCurrentSteeringWheelAngle`, `registerSteeringWheelAngle` | `CAR_*`(일반) | 됨, 범위 −470~500도 | 됨 | `controls?steering=` | **부호가 반대**: Virtual Console에서 +90을 넣으면 앱에는 −90이 온다. 실차 부호 규약 확인 필요 |
@@ -40,7 +40,7 @@
    - 쓸 수 있으면: 주차 브레이크와 TPMS 모두 경고등으로 감지하고, 에뮬레이터에서 바로 시연할 수 있다.
    - 쓸 수 없으면: 주차 브레이크는 AAOS `PARKING_BRAKE_ON`(일반 권한)으로 읽는다. 다만 에뮬레이터에서는 값을 바꿀 수 없어 시연이 어렵다. TPMS는 대안이 없다(바퀴별 공기압도 `PRIVATE_CAR_SAFETY`).
 2. **기어는 Pleos SDK로 읽는다.** AAOS를 쓰지 않아도 된다.
-3. **비상등은 운전자에게 묻는다.** 설계서의 대체안이 확정됐다.
+3. **비상등은 운전자에게 묻는다.**
 4. **타이어 "어느 바퀴" 판단**은 실차에서 `getTirePressure`가 될 때만 가능하다(기준값 137kPa와 비교). 에뮬레이터 시연은 TPMS 경고등 + "어느 바퀴인지 확인해 보세요" 안내로 한다.
 5. **충격 감지는 에뮬레이터에서 시험할 수 있다.** 보정 전 가속도 센서에 값을 넣는 방식이다. 속도도 Virtual Console로 바꿀 수 있어 "충격 + 정차" 규칙을 끝까지 시험할 수 있다.
 6. **에어백, 오일 레벨은 에뮬레이터가 지원하지 않는다.** 앱은 지원 여부를 먼저 확인하고 "확인 불가" 경로로 동작해야 한다. 시연에서도 그 경로가 보인다.
